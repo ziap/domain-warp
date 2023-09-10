@@ -2,6 +2,7 @@
 
 #ifdef GL_ES
 precision highp float;
+precision highp int;
 #endif
 
 out vec2 out_uv;
