@@ -25,18 +25,24 @@ vec3 palette(float x) {
   return 0.5 + 0.5 * sin(PI2 * (COLOR_OFFSET + COLOR_SCALE * x));
 }
 
-int permute(int x) {
-  x ^= 5;
-  x &= 0xff;
-  x ^= x >> ((x >> 6) + 2);
-  x *= 217;
-  x &= 0xff;
-  x ^= (x >> 6);
-  return x;
-}
+// TODO: seed the hash function from the CPU
+#define seed uvec3(69, 420, 1337)
 
-int permute(ivec3 v) {
-  return permute(v.x + permute(v.y + permute(v.z)));
+// 3D PCG hash function
+// - https://www.jcgt.org/published/0009/03/02/
+// - https://pcg-random.org
+uint hash(ivec3 x) {
+  uvec3 v = uvec3(x) + seed;
+  v *= 747796405u;
+  v += 2891336453u;
+
+  v.x += v.y * v.z;
+  v.y += v.z * v.x;
+  v.z += v.x * v.y;
+
+  v ^= v >> 16u;
+
+  return v.x * v.y + v.z;
 }
 
 vec3 quintic_curve(vec3 t) {
@@ -45,28 +51,26 @@ vec3 quintic_curve(vec3 t) {
 
 // TODO: Switch to perlin noise
 float value_noise(vec3 inp) {
-  vec3 uv_floor = floor(inp);
-  ivec3 uv = ivec3(uv_floor);
-  vec3 uv_t = quintic_curve(inp - uv_floor);
+  ivec3 uv = ivec3(floor(inp));
+  vec3 uv_t = quintic_curve(fract(inp));
 
-  float c000 = float(permute(uv));
-  float c001 = float(permute(uv + ivec3(0, 0, 1)));
-  float c010 = float(permute(uv + ivec3(0, 1, 0)));
-  float c011 = float(permute(uv + ivec3(0, 1, 1)));
-  float c100 = float(permute(uv + ivec3(1, 0, 0)));
-  float c101 = float(permute(uv + ivec3(1, 0, 1)));
-  float c110 = float(permute(uv + ivec3(1, 1, 0)));
-  float c111 = float(permute(uv + ivec3(1, 1, 1)));
+  vec4 cx0 = vec4(
+    hash(uv + ivec3(0, 0, 0)),
+    hash(uv + ivec3(0, 0, 1)),
+    hash(uv + ivec3(0, 1, 0)),
+    hash(uv + ivec3(0, 1, 1))
+  );
 
-  float cx00 = mix(c000, c100, uv_t.x);
-  float cx01 = mix(c001, c101, uv_t.x);
-  float cx10 = mix(c010, c110, uv_t.x);
-  float cx11 = mix(c011, c111, uv_t.x);
+  vec4 cx1 = vec4(
+    hash(uv + ivec3(1, 0, 0)),
+    hash(uv + ivec3(1, 0, 1)),
+    hash(uv + ivec3(1, 1, 0)),
+    hash(uv + ivec3(1, 1, 1))
+  );
 
-  float cy0 = mix(cx00, cx10, uv_t.y);
-  float cy1 = mix(cx01, cx11, uv_t.y);
-
-  return mix(cy0, cy1, uv_t.z) / 256.0;
+  vec4 cx = mix(cx0, cx1, uv_t.x);
+  vec2 cy = mix(cx.xy, cx.zw, uv_t.y);
+  return mix(cy.x, cy.y, uv_t.z) / 4294967296.0;
 }
 
 float fbm(vec3 inp) {
