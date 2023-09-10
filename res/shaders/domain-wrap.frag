@@ -27,24 +27,22 @@ vec3 palette(float x) {
   return 0.5 + 0.5 * sin(PI2 * (COLOR_OFFSET + COLOR_SCALE * x));
 }
 
-// TODO: seed the hash function from the CPU
-#define seed uvec3(69, 420, 1337)
-
-// 3D PCG hash function
+// Modified 3D PCG hash function
 // - https://www.jcgt.org/published/0009/03/02/
 // - https://pcg-random.org
 uint hash(ivec3 x) {
-  uvec3 v = uvec3(x) + seed;
-  v *= 747796405u;
-  v += 2891336453u;
-
+  // TODO: replace the increment with seed generated from the CPU
+  uvec3 v = uvec3(x) * 747796405u + 747796405u;
   v.x += v.y * v.z;
   v.y += v.z * v.x;
   v.z += v.x * v.y;
+  
+  uint r = v.z >> 27u;
+  v.y ^= (v.y >> 18u) | (v.z << 14u);
+  v.z ^= v.z >> 18u;
 
-  v ^= v >> 16u;
-
-  return v.x * v.y + v.z;
+  uint h = (v.y >> 27u) | (v.z << 5u);
+  return (h >> r) | (h << (-r & 31u));
 }
 
 vec3 quintic_curve(vec3 t) {
