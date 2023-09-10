@@ -20,6 +20,7 @@ out vec4 frag_color;
 #define COLOR_SCALE 2.0
 
 #define WARP_SCALE 2.0
+#define WARP_SHIFT vec3(12.0, 12.0, 0.0)
 
 #define PI2 6.283185307179586
 vec3 palette(float x) {
@@ -93,10 +94,9 @@ float fbm(vec3 inp) {
 }
 
 void main() {
-  vec3 shift = vec3(12.0, 6.0, 0.0);
   vec3 uv = vec3(out_uv, u_time * 0.025);
-  vec3 q = vec3(fbm(uv), fbm(uv + shift), 0.5) * 2.0 - 1.0;
-  vec3 r = vec3(fbm(uv + WARP_SCALE * q), fbm(uv + WARP_SCALE * q + shift), 0.5) * 2.0 - 1.0;
+  vec3 q = vec3(fbm(uv + WARP_SHIFT), fbm(uv - WARP_SHIFT), 0.5) * 2.0 - 1.0;
+  vec3 r = vec3(fbm(uv + WARP_SCALE * q + WARP_SHIFT), fbm(uv + WARP_SCALE * q - WARP_SHIFT), 0.5) * 2.0 - 1.0;
   float color = fbm(uv + WARP_SCALE * r);
 
   frag_color = vec4(palette(color), 1.0);
