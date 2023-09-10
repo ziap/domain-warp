@@ -16,10 +16,10 @@ in vec2 out_uv;
 
 out vec4 frag_color;
 
-#define COLOR_OFFSET vec3(0.5, 0.4, 0.35)
-#define COLOR_SCALE 2.0
+#define COLOR_OFFSET vec3(0.25, 0.15, 0.1)
+#define COLOR_SCALE 2.5
 
-#define WARP_SCALE 2.0
+#define WARP_SCALE 4.0
 #define WARP_SHIFT vec3(12.0, 12.0, 0.0)
 
 #define PI2 6.283185307179586
@@ -27,12 +27,15 @@ vec3 palette(float x) {
   return 0.5 + 0.5 * sin(PI2 * (COLOR_OFFSET + COLOR_SCALE * x));
 }
 
+// TODO: This is not the right noramlization
+#define NORM 1.4142135623730951
+
 // Modified 3D PCG hash function
 // - https://www.jcgt.org/published/0009/03/02/
 // - https://pcg-random.org
-uint hash(ivec3 x) {
+uint pcg_hash(ivec3 x) {
   // TODO: replace the increment with seed generated from the CPU
-  uvec3 v = uvec3(x) * 747796405u + 747796405u;
+  uvec3 v = uvec3(x) * 747796405u + 69u;
   v.x += v.y * v.z;
   v.y += v.z * v.x;
   v.z += v.x * v.y;
@@ -45,32 +48,49 @@ uint hash(ivec3 x) {
   return (h >> r) | (h << (-r & 31u));
 }
 
+#define hash pcg_hash
+
+vec3 gradient(ivec3 p) {
+  uint h = pcg_hash(p);
+
+  float lambda = PI2 * float(h & 0xffffu) / 65536.0;
+  float x = cos(lambda);
+  float z = sin(lambda);
+
+  float y = float(h >> 16u) / 32768.0 - 1.0;
+  float sin_phi = y;
+  float cos_phi = sqrt(1.0 - y * y);
+
+  return vec3(cos_phi * x, sin_phi, cos_phi * z);
+}
+
 vec3 quintic_curve(vec3 t) {
   return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-// TODO: Switch to perlin noise
-float value_noise(vec3 inp) {
+float perlin_noise(vec3 inp) {
   ivec3 uv = ivec3(floor(inp));
+  vec3 t0 = fract(inp);
+  vec3 t1 = t0 - 1.0;
   vec3 uv_t = quintic_curve(fract(inp));
 
   vec4 cx0 = vec4(
-    hash(uv + ivec3(0, 0, 0)),
-    hash(uv + ivec3(0, 0, 1)),
-    hash(uv + ivec3(0, 1, 0)),
-    hash(uv + ivec3(0, 1, 1))
+    dot(gradient(uv), t0),
+    dot(gradient(uv + ivec3(0, 0, 1)), vec3(t0.x, t0.y, t1.z)),
+    dot(gradient(uv + ivec3(0, 1, 0)), vec3(t0.x, t1.y, t0.z)),
+    dot(gradient(uv + ivec3(0, 1, 1)), vec3(t0.x, t1.y, t1.z))
   );
-
   vec4 cx1 = vec4(
-    hash(uv + ivec3(1, 0, 0)),
-    hash(uv + ivec3(1, 0, 1)),
-    hash(uv + ivec3(1, 1, 0)),
-    hash(uv + ivec3(1, 1, 1))
+    dot(gradient(uv + ivec3(1, 0, 0)), vec3(t1.x, t0.y, t0.z)),
+    dot(gradient(uv + ivec3(1, 0, 1)), vec3(t1.x, t0.y, t1.z)),
+    dot(gradient(uv + ivec3(1, 1, 0)), vec3(t1.x, t1.y, t0.z)),
+    dot(gradient(uv + 1), t1)
   );
 
   vec4 cx = mix(cx0, cx1, uv_t.x);
   vec2 cy = mix(cx.xy, cx.zw, uv_t.y);
-  return mix(cy.x, cy.y, uv_t.z) / 4294967296.0;
+
+  return mix(cy.x, cy.y, uv_t.z) * NORM * 0.5 + 0.5;
 }
 
 float fbm(vec3 inp) {
@@ -81,7 +101,7 @@ float fbm(vec3 inp) {
   float frequency = 1.0;
   
   for (int i = 0; i < OCTAVES; ++i) {
-    result += amplitude * value_noise(inp * frequency);
+    result += amplitude * perlin_noise(inp * frequency);
     scale += amplitude;
 
     frequency *= LACUNARITY;

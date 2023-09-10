@@ -18,5 +18,5 @@ void main() {
 
   gl_Position = vec4(uv, 0.0, 1.0);
 
-  out_uv = uv * u_resolution / max(u_resolution.x, u_resolution.y) * 0.5 * 8.0;
+  out_uv = uv * u_resolution / max(u_resolution.x, u_resolution.y) * 0.5 * 4.0;
 }
