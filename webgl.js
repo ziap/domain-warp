@@ -108,8 +108,8 @@ const env = {
   glUniform1f(location, x) {
     gl.uniform1f(gl_objs[location], x)
   },
-  glUniform1i(location, x) {
-    gl.uniform1i(gl_objs[location], x)
+  glUniform3ui(location, x, y, z) {
+    gl.uniform3ui(gl_objs[location], x, y, z)
   },
   glDrawArrays(mode, first, count) {
     gl.drawArrays(mode, first, count)

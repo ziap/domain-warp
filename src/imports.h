@@ -46,7 +46,7 @@ extern void glClear(int);
 extern void glBufferSubData(int, int, int, void*);
 extern void glUniform2f(int, float, float);
 extern void glUniform1f(int, float);
-extern void glUniform1i(int, int);
+extern void glUniform3ui(int, unsigned int, unsigned int, unsigned int);
 extern void glDrawArrays(int, int, int);
 
 #endif
