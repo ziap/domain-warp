@@ -27,41 +27,21 @@ vec3 palette(float x) {
   return 0.5 + 0.5 * sin(PI2 * (COLOR_OFFSET + COLOR_SCALE * x));
 }
 
-// TODO: This is not the right noramlization
-#define NORM 1.4142135623730951
-
-// Modified 3D PCG hash function
-// - https://www.jcgt.org/published/0009/03/02/
-// - https://pcg-random.org
-uint pcg_hash(ivec3 x) {
-  // TODO: replace the increment with seed generated from the CPU
-  uvec3 v = uvec3(x) * 747796405u + 69u;
-  v.x += v.y * v.z;
-  v.y += v.z * v.x;
-  v.z += v.x * v.y;
-  
-  uint r = v.z >> 27u;
-  v.y ^= (v.y >> 18u) | (v.z << 14u);
-  v.z ^= v.z >> 18u;
-
-  uint h = (v.y >> 27u) | (v.z << 5u);
-  return (h >> r) | (h << (-r & 31u));
+// Custom seedable vector hash function designed for speed
+#define MUL  747796405u
+#define seed 420u
+uvec3 grug33(ivec3 x) {
+  uvec3 v = uvec3(x) * MUL;
+  uvec3 h = (seed ^ v) * MUL;
+  h = (h ^ v.yzx) * MUL;
+  h = (h ^ v.zxy) * MUL;
+  return h;
 }
 
-#define hash pcg_hash
-
+// TODO: Use gaussian distribution to generate unbiased unit vectors
+// TODO: Normalize so that the noise output is (theoretically) [-1, 1]
 vec3 gradient(ivec3 p) {
-  uint h = pcg_hash(p);
-
-  float lambda = PI2 * float(h & 0xffffu) / 65536.0;
-  float x = cos(lambda);
-  float z = sin(lambda);
-
-  float y = float(h >> 16u) / 32768.0 - 1.0;
-  float sin_phi = y;
-  float cos_phi = sqrt(1.0 - y * y);
-
-  return vec3(cos_phi * x, sin_phi, cos_phi * z);
+  return vec3(grug33(p)) / 2147483648.0 - 1.0;
 }
 
 vec3 quintic_curve(vec3 t) {
@@ -90,7 +70,7 @@ float perlin_noise(vec3 inp) {
   vec4 cx = mix(cx0, cx1, uv_t.x);
   vec2 cy = mix(cx.xy, cx.zw, uv_t.y);
 
-  return mix(cy.x, cy.y, uv_t.z) * NORM * 0.5 + 0.5;
+  return mix(cy.x, cy.y, uv_t.z) * 0.5 + 0.5;
 }
 
 float fbm(vec3 inp) {
