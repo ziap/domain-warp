@@ -1,6 +1,15 @@
 # Domain Warp
 
-Small domain warped noise experiment
+Real-time, animated domain-warped fractional-brownian perlin noise with C and
+OpenGL.
+
+Also compiled to WASM + WebGL for the web. Check out the
+[live demo](https://ziap.github.io/domain-warp).
+
+**Warning:** The code might not run well on your device, especially on mobile
+so expect low FPS and choppy animation.
+
+![](logo.png)
 
 ## How to use (this is also copy-pasted)
 
