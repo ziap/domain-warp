@@ -11,7 +11,7 @@ so expect low FPS and choppy animation.
 
 ![](logo.png)
 
-## How to use (this is also copy-pasted)
+## How to use
 
 ### Requirements
 
