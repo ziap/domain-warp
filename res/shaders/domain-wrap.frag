@@ -26,8 +26,8 @@ vec3 palette(float x) {
 vec3 gradient(ivec3 x) {
   uvec3 v = uvec3(x) * MUL;
   uvec3 h = (SEED ^ v) * MUL;
-  h = (h ^ v.yzx) * MUL;
-  h = (h ^ v.zxy) * MUL;
+  h = ((h >> 16u) ^ v.yzx) * MUL;
+  h = ((h >> 16u) ^ v.zxy) * MUL;
 
   return vec3(h) / 2147483648.0 - 1.0;
 }
