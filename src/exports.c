@@ -19,7 +19,6 @@ void update_mouse(float new_x, float new_y) {
 static DomainWarp domain_warp;
 
 void game_init(void) {
-  glEnable(GL_DEPTH_TEST);
   DomainWarpInit(&domain_warp);
 }
 
@@ -29,7 +28,7 @@ void game_update(float dt) {
   DomainWarpUpdate(&domain_warp, width, height, time);
 
   time += dt;
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   DomainWarpRender(&domain_warp);
 }
